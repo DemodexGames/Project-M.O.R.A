@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PROJECT M.O.R.A. v3.0 // DEMODEX CONVERSATIONAL CORE</title>
+  <style>
+    :root {
+      --bg: #0a0a0f;
+      --bg2: #11111a;
+      --panel: rgba(20, 20, 30, 0.92);
+      --line: rgba(255,255,255,0.08);
+      --text: #f4f6fb;
+      --muted: #97a0af;
+      --accent: #7c5cff;
+      --accent2: #b38cff;
+      --good: #7bffbf;
+      --danger: #ff6f91;
+      --bubble: rgba(255,255,255,0.05);
+      --bubble2: rgba(255,255,255,0.03);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: Inter, Segoe UI, Arial, sans-serif; }
+    html, body { height: 100%; overflow: hidden; }
+    body {
+      background:
+        radial-gradient(circle at top right, rgba(124,92,255,0.13), transparent 28%),
+        radial-gradient(circle at bottom left, rgba(179,140,255,0.08), transparent 32%),
+        linear-gradient(180deg, #12111c, #0d0d14, #09090f);
+      color: var(--text);
+      display: flex;
+      min-height: 100vh;
+    }
+    .app { display: grid; grid-template-columns: 250px 1fr; width: 100%; height: 100dvh; }
+    .nav {
+      border-right: 1px solid var(--line);
+      background: rgba(255,255,255,0.02);
+      display: flex;
+      flex-direction: column;
+      padding: 14px;
+      gap: 14px;
+      min-width: 0;
+    }
+    .brand { display:flex; align-items:center; gap:10px; }
+    .orb { width: 14px; height: 14px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #fff, var(--accent2)); box-shadow: 0 0 14px rgba(179,140,255,.7); }
+    .brand h1 { font-size: 1rem; letter-spacing: 2px; color: #ece0ff; }
+    .brand p { font-size: .72rem; color: var(--muted); margin-top: 2px; }
+    .btn {
+      width: 100%; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.04); color: white;
+      border-radius: 14px; padding: 11px 12px; text-align: left; cursor: pointer; font-weight: 700; font-size: .86rem;
+      transition: .18s ease;
+    }
+    .btn:hover { background: rgba(255,255,255,0.07); transform: translateY(-1px); }
+    .btn.primary { background: linear-gradient(135deg, var(--accent), var(--accent2)); border: none; }
+    .btn.danger { background: rgba(255,111,145,0.12); color: #ffdce7; border-color: rgba(255,111,145,0.2); }
+    .nav-group { display:flex; flex-direction:column; gap:8px; }
+    .nav-label { font-size: .72rem; color: var(--muted); padding: 0 4px; }
+    .mini-card {
+      border: 1px solid rgba(255,255,255,0.06); background: rgba(255,255,255,0.03); border-radius: 16px; padding: 12px;
+      font-size: .8rem; color: #d7dbe5; line-height: 1.45;
+    }
+    .mini-card strong { color: #efe6ff; }
+    .main { display:flex; flex-direction:column; min-width:0; min-height:0; overflow:hidden; }
+    .topbar {
+      border-bottom: 1px solid var(--line);
+      padding: 12px 16px;
+      display:flex; align-items:center; justify-content:space-between; gap:12px;
+      background: rgba(255,255,255,0.02);
+      flex-shrink: 0;
+      position: sticky;
+      top: 0;
+      z-index: 2;
+    }
+    .top-left { display:flex; align-items:center; gap:12px; min-width:0; }
+    .top-title h2 { font-size: .95rem; color: #efe4ff; }
+    .top-title p { font-size: .72rem; color: var(--muted); }
+    .mode-badge {
+      font-size: .72rem; color: #d9d2ff; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.04);
+      padding: 7px 10px; border-radius: 999px;
+    }
+    .chat-wrap { flex:1; min-height:0; display:flex; flex-direction:column; overflow:hidden; }
+    .chat { flex:1; min-height:0; overflow-y:auto; overflow-x:hidden; padding: 18px; display:flex; flex-direction:column; gap:12px; }
+    .msg {
+      max-width: min(860px, 88%); padding: 12px 14px; border-radius: 18px; line-height: 1.58; font-size: .95rem;
+      white-space: pre-wrap; word-wrap: break-word; overflow-wrap: anywhere; animation: fade .18s ease;
+    }
+    .mora { align-self:flex-start; background: var(--bubble); border: 1px solid rgba(255,255,255,0.06); border-bottom-left-radius: 6px; }
+    .user { align-self:flex-end; background: linear-gradient(135deg, var(--accent), var(--accent2)); color:white; border-bottom-right-radius: 6px; }
+    .system { align-self:center; background: var(--bubble2); border: 1px solid rgba(255,255,255,0.05); color: #cad1dd; font-size: .78rem; max-width: 96%; }
+    .typing { font-style: italic; color: #b8c0cd; }
+    @keyframes fade { from { opacity:0; transform: translateY(8px);} to { opacity:1; transform: translateY(0);} }
+    .composer-wrap { border-top:1px solid var(--line); background: rgba(255,255,255,0.02); flex-shrink:0; position:sticky; bottom:0; z-index:3; }
+    .quickbar { display:flex; gap:8px; padding: 10px 14px 0; overflow-x:auto; scrollbar-width:none; }
+    .quickbar::-webkit-scrollbar { display:none; }
+    .quick-btn {
+      white-space: nowrap; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.04); color:white;
+      border-radius: 999px; padding: 8px 12px; font-size: .78rem; cursor: pointer;
+    }
+    .composer { display:grid; grid-template-columns: 1fr auto; gap:10px; padding: 12px 14px 14px; align-items:end; }
+    textarea {
+      width:100%; resize:none; min-height:56px; max-height:170px; border-radius: 16px; padding: 13px 14px;
+      background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); color:white; outline:none; line-height:1.45;
+    }
+    .footer { padding: 0 14px 12px; font-size: .72rem; color: #8e97a7; }
+    .row { display:flex; gap:8px; flex-wrap:wrap; }
+    .chip { font-size: .72rem; padding: 6px 9px; border-radius: 999px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); }
+    @media (max-width: 920px) {
+      .app { grid-template-columns: 1fr; }
+      .nav { display:none; }
+      .msg { max-width: 96%; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="nav">
+      <div class="brand">
+        <div class="orb"></div>
+        <div>
+          <h1>M.O.R.A.</h1>
+          <p>v3.0 • Demodex Conversational Core</p>
+        </div>
+      </div>
+
+      <button class="btn primary" id="newChatBtn">＋ Chat nuevo</button>
+
+      <div class="nav-group">
+        <div class="nav-label">Herramientas</div>
+        <button class="btn" id="researchBtn">🔎 Investigación avanzada</button>
+        <button class="btn" id="studyBtn">📘 Estudio profundo</button>
+        <button class="btn" id="creativeBtn">✨ Modo creativo</button>
+      </div>
+
+      <div class="nav-group">
+        <div class="nav-label">Memoria</div>
+        <button class="btn" id="exportBtn">Exportar memoria</button>
+        <button class="btn" id="importBtn">Importar memoria</button>
+        <button class="btn danger" id="resetBtn">Reset total</button>
+      </div>
+
+      <div class="mini-card">
+        <strong>Modo actual:</strong> <span id="sideMode">Conversación</span><br><br>
+        <strong>Usuario:</strong> <span id="sideName">No definido</span><br>
+        <strong>Tema activo:</strong> <span id="sideTopic">ninguno</span><br>
+        <strong>Motor:</strong> pseudo-razonamiento + memoria + conocimiento local
+      </div>
+    </aside>
+
+    <main class="main">
+      <div class="topbar">
+        <div class="top-left">
+          <div class="orb"></div>
+          <div class="top-title">
+            <h2>PROJECT M.O.R.A. v3.0</h2>
+            <p>Parecida a una IA conversacional real • Más natural • Más larga • Más humana</p>
+          </div>
+        </div>
+        <div class="mode-badge" id="topMode">Modo: Conversación</div>
+      </div>
+
+      <div class="chat-wrap">
+        <div class="chat" id="chat"></div>
+
+        <div class="composer-wrap">
+          <div class="quickbar" id="quickbar">
+            <button class="quick-btn" data-prompt="Hazme un resumen extenso de la Revolución Francesa">Resumen extenso</button>
+            <button class="quick-btn" data-prompt="Investiga a profundidad la Segunda Guerra Mundial">Investigar</button>
+            <button class="quick-btn" data-prompt="Explícame paso a paso la fotosíntesis">Paso a paso</button>
+            <button class="quick-btn" data-prompt="Hazme una tarea larga sobre la independencia de Honduras">Tarea larga</button>
+            <button class="quick-btn" data-prompt="Dame un ejemplo para entender las fracciones">Ejemplo</button>
+          </div>
+
+          <div class="composer">
+            <textarea id="userInput" placeholder="Pregúntale a M.O.R.A. lo que quieras..."></textarea>
+            <button class="btn primary" id="sendBtn">Enviar</button>
+          </div>
+          <div class="footer">Created by <b>DEMODEX</b> • M.O.R.A. v3.0 • Conversational layout inspirado en asistentes modernos, pero con identidad propia.</div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const STORAGE_KEY = 'mora_demodex_core_v30';
+
+    const DEFAULT_STATE = {
+      profile: { name: '', awaitingName: false },
+      study: { activeTopic: '', lastMode: 'Conversación' },
+      memory: { notes: [], lastTopics: [] },
+      system: { version: '3.0' }
+    };
+
+    const KNOWLEDGE_BASE = {
+      'revolucion francesa': {
+        subject: 'historia',
+        definition: 'La Revolución Francesa fue un proceso histórico iniciado en 1789 que transformó profundamente el sistema político, social y económico de Francia.',
+        keyPoints: ['Surgió por desigualdad social', 'Debilitó la monarquía absoluta', 'Impulsó ideas de libertad, igualdad y fraternidad', 'Influyó en muchos países'],
+        easy: 'Fue una gran rebelión del pueblo contra un sistema injusto.',
+        conclusion: 'Cambió la forma en que el mundo entendió los derechos ciudadanos y el poder político.'
+      },
+      'segunda guerra mundial': {
+        subject: 'historia',
+        definition: 'La Segunda Guerra Mundial fue un conflicto global entre 1939 y 1945 que involucró a gran parte del mundo y dejó consecuencias enormes.',
+        keyPoints: ['Inició en 1939', 'Terminó en 1945', 'Participaron Aliados y Potencias del Eje', 'Cambió la política mundial'],
+        easy: 'Fue una guerra gigantesca que afectó a muchos países y cambió la historia.',
+        conclusion: 'Su impacto humano, político y económico marcó el mundo moderno.'
+      },
+      'fotosintesis': {
+        subject: 'biología',
+        definition: 'La fotosíntesis es el proceso mediante el cual las plantas producen su alimento usando luz solar, agua y dióxido de carbono.',
+        keyPoints: ['Ocurre en hojas', 'Usa clorofila', 'Produce glucosa', 'Libera oxígeno'],
+        easy: 'La planta usa la luz del sol para fabricar comida.',
+        conclusion: 'Es vital para la vida porque produce oxígeno y alimento.'
+      },
+      'independencia de honduras': {
+        subject: 'historia',
+        definition: 'La independencia de Honduras se conmemora el 15 de septiembre de 1821, cuando Centroamérica dejó el dominio español.',
+        keyPoints: ['Fecha cívica importante', 'Parte de la independencia centroamericana', 'Marcó el fin del dominio español'],
+        easy: 'Fue cuando Honduras dejó de depender de España junto con otros países.',
+        conclusion: 'Representa el inicio de una nueva etapa histórica para Honduras.'
+      },
+      'fracciones': {
+        subject: 'matemáticas',
+        definition: 'Las fracciones representan partes de un todo y se expresan con numerador y denominador.',
+        keyPoints: ['Tienen numerador', 'Tienen denominador', 'Representan partes', 'Sirven para dividir cantidades'],
+        easy: 'Una fracción muestra una parte de algo completo.',
+        conclusion: 'Son esenciales para representar cantidades parciales con precisión.'
+      }
+    };
+
+    let state = loadState();
+
+    const el = {
+      chat: document.getElementById('chat'),
+      userInput: document.getElementById('userInput'),
+      sendBtn: document.getElementById('sendBtn'),
+      newChatBtn: document.getElementById('newChatBtn'),
+      researchBtn: document.getElementById('researchBtn'),
+      studyBtn: document.getElementById('studyBtn'),
+      creativeBtn: document.getElementById('creativeBtn'),
+      exportBtn: document.getElementById('exportBtn'),
+      importBtn: document.getElementById('importBtn'),
+      resetBtn: document.getElementById('resetBtn'),
+      quickbar: document.getElementById('quickbar'),
+      sideMode: document.getElementById('sideMode'),
+      sideName: document.getElementById('sideName'),
+      sideTopic: document.getElementById('sideTopic'),
+      topMode: document.getElementById('topMode')
+    };
+
+    function loadState() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return structuredClone(DEFAULT_STATE);
+        return deepMerge(structuredClone(DEFAULT_STATE), JSON.parse(raw));
+      } catch { return structuredClone(DEFAULT_STATE); }
+    }
+    function deepMerge(target, source) {
+      for (const k in source) {
+        if (source[k] && typeof source[k] === 'object' && !Array.isArray(source[k])) target[k] = deepMerge(target[k] || {}, source[k]);
+        else target[k] = source[k];
+      }
+      return target;
+    }
+    function saveState() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); updateUI(); }
+    function normalize(text) {
+      const slangMap = { q:'que', k:'que', xq:'porque', pq:'porque', pa:'para', toy:'estoy', qlq:'que onda' };
+      let out = ` ${String(text || '').toLowerCase().trim()} `.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[¡!¿?,.;:]+/g, ' ');
+      Object.entries(slangMap).forEach(([a,b]) => { out = out.replace(new RegExp(`(^|\\s)${a}(?=\\s|$)`, 'g'), `$1${b}`); });
+      return out.replace(/\s+/g, ' ').trim();
+    }
+    function randomFrom(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+    function toTitle(text) { return text ? text.charAt(0).toUpperCase() + text.slice(1) : 'Tema'; }
+    function addMessage(text, sender = 'mora') {
+      const div = document.createElement('div');
+      div.className = `msg ${sender}`;
+      div.textContent = text;
+      el.chat.appendChild(div);
+      el.chat.scrollTop = el.chat.scrollHeight;
+    }
+    function addTypingThenReply(text, delay = 240) {
+      const t = document.createElement('div');
+      t.className = 'msg mora typing';
+      t.textContent = 'M.O.R.A. está pensando...';
+      el.chat.appendChild(t);
+      el.chat.scrollTop = el.chat.scrollHeight;
+      setTimeout(() => { t.remove(); addMessage(text, 'mora'); }, delay);
+    }
+    function addSystem(text) { addMessage(text, 'system'); }
+    function autoResize() { el.userInput.style.height = 'auto'; el.userInput.style.height = Math.min(el.userInput.scrollHeight, 170) + 'px'; }
+
+    function extractName(message) {
+      const patterns = [/me llamo\s+([a-zA-ZÁÉÍÓÚáéíóúñÑ0-9_\- ]{2,30})/i, /mi nombre es\s+([a-zA-ZÁÉÍÓÚáéíóúñÑ0-9_\- ]{2,30})/i, /soy\s+([a-zA-ZÁÉÍÓÚáéíóúñÑ0-9_\- ]{2,30})/i];
+      for (const p of patterns) {
+        const m = message.match(p);
+        if (m?.[1]) return m[1].trim().split(/\s+/).slice(0,2).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+      }
+      return null;
+    }
+
+    function getKnowledgeEntry(topic) {
+      const n = normalize(topic);
+      if (KNOWLEDGE_BASE[n]) return KNOWLEDGE_BASE[n];
+      const found = Object.keys(KNOWLEDGE_BASE).find(k => n.includes(k) || k.includes(n));
+      return found ? KNOWLEDGE_BASE[found] : null;
+    }
+
+    function detectMode(text) {
+      const n = normalize(text);
+      if (n.includes('investiga') || n.includes('investigacion') || n.includes('investigación') || n.includes('a profundidad')) return 'Investigación avanzada';
+      if (n.includes('resumen extenso') || n.includes('tarea larga') || n.includes('explicame paso a paso') || n.includes('explícame paso a paso') || n.includes('estudio')) return 'Estudio profundo';
+      if (n.includes('cuento') || n.includes('crea') || n.includes('imagina')) return 'Modo creativo';
+      return 'Conversación';
+    }
+
+    function buildLongSummary(topic, entry, mode) {
+      const display = toTitle(topic);
+      const def = entry?.definition || `${display} es un tema importante que puede analizarse desde su definición, sus causas, sus características y su impacto.`;
+      const points = entry?.keyPoints || ['Tiene una definición central', 'Posee características importantes', 'Tiene impacto académico o práctico'];
+      const easy = entry?.easy || `En simple, ${display} puede entenderse si primero identificas qué es, luego cómo funciona y por qué importa.`;
+      const concl = entry?.conclusion || `En conclusión, ${display} es relevante porque permite comprender mejor su contexto y su importancia.`;
+
+      const intros = [
+        `Claro. Te voy a dar una explicación más completa y con redacción natural sobre ${display}.`,
+        `Va. Aquí tienes un desarrollo más largo y mejor conectado sobre ${display}.`,
+        `Perfecto. Te lo redacto de forma más humana y extensa sobre ${display}.`
+      ];
+
+      const body1 = `${def} Antes de verlo como un simple concepto, conviene entender que este tema suele estudiarse no solo por su definición, sino también por el efecto que tiene dentro de su materia. Por eso, lo importante no es memorizar una frase, sino captar la idea general y cómo se relaciona con otros contenidos.`;
+      const body2 = `Si lo analizamos con más calma, se pueden destacar varios puntos esenciales: ${points.join(', ')}. Estos elementos ayudan a construir una explicación más completa, porque muestran tanto la base del tema como sus partes más relevantes. Cuando un estudiante entiende estos puntos, le resulta mucho más fácil resumir, responder preguntas y desarrollar tareas con sus propias palabras.`;
+      const body3 = mode === 'Investigación avanzada'
+        ? `Desde un enfoque de investigación, también conviene observar el contexto, las causas y las consecuencias de ${display}. Esto permite que la respuesta no se quede en algo superficial. En una investigación avanzada, lo ideal es explicar primero el concepto, luego ampliar con detalles clave y finalmente relacionarlo con su importancia real dentro del tema.`
+        : `Si lo explicamos de forma más sencilla, la idea central sería esta: ${easy} Esa forma de verlo hace que el contenido sea más fácil de recordar y también ayuda a que puedas expresarlo mejor sin depender de frases copiadas.`;
+      const body4 = `En términos prácticos, una buena manera de razonar este tema es preguntarte: ¿qué es?, ¿por qué importa?, ¿cómo se entiende mejor?, y ¿qué conclusión puedo sacar? Ese pequeño proceso hace que la respuesta suene más inteligente y menos mecánica.`;
+      const close = `${concl}\n\nSi quieres, ahora puedo hacer cualquiera de estas tres cosas:\n1. Convertírtelo en tarea larga para copiar\n2. Hacerte 5 preguntas sobre el tema\n3. Explicártelo todavía más fácil paso a paso`;
+
+      return `${randomFrom(intros)}\n\n${body1}\n\n${body2}\n\n${body3}\n\n${body4}\n\n${close}`;
+    }
+
+    function buildSmartReply(message) {
+      const text = message.trim();
+      const lower = normalize(text);
+      const maybeName = extractName(text);
+      if (maybeName) {
+        state.profile.name = maybeName;
+        saveState();
+        return `Perfecto. Te voy a llamar ${maybeName}. Ya quedó guardado en mi memoria.`;
+      }
+
+      if (['hola','holaaa','buenas','hey','hi','que onda','qlq'].some(g => lower.includes(normalize(g)))) {
+        if (!state.profile.name) return 'Hola. Antes de seguir, dime tu nombre para recordarte como una IA de verdad 😈';
+        return `Hola${state.profile.name ? ', ' + state.profile.name : ''}. Estoy lista. ¿Qué quieres hacer hoy: conversar, estudiar o investigar a profundidad?`;
+      }
+
+      const casualHello = ['holi','hola','holaaa','hey','heyy','que onda','qlq','buenas','buenass'];
+      if (casualHello.some(g => lower.includes(normalize(g)))) {
+        const replies = [
+          `holiii ${state.profile.name ? state.profile.name : ''} 😈 ¿qué ocupas?`.trim(),
+          `holaaa ${state.profile.name ? state.profile.name : ''} ✨ aquí ando, tirame lo que necesites`.trim(),
+          `eyyy ${state.profile.name ? state.profile.name : ''} 😌 ¿en qué te ayudo?`.trim(),
+          `holi holi 😈 decime qué hacemos: tarea, resumen, idea loca o investigar.`
+        ];
+        return randomFrom(replies);
+      }
+
+      if (lower.includes('quien eres') || lower.includes('que eres') || lower.includes('qué eres')) {
+        return 'Soy M.O.R.A. Una IA local conversacional hecha para sentirse más viva, más natural y más útil. No soy un modelo gigante como ChatGPT, pero sí puedo comportarme mucho mejor si me programas con buena lógica, memoria y estilo.';
+      }
+
+      if (lower.includes('gracias')) {
+        return randomFrom([
+          'de nadaaa 😌',
+          'siempre baby 😈',
+          'de una, aquí ando',
+          'obvio, para eso estoy'
+        ]);
+      }
+
+      if (lower.includes('me ayudas') || lower.includes('me puedes ayudar') || lower.includes('ocupas ayudarme')) {
+        return randomFrom([
+          'obvio que sí 😈 decime qué necesitas y te lo resuelvo',
+          'sí, tirame el tema o la idea y lo armamos bien',
+          'de una, solo dime exactamente con qué y te ayudo'
+        ]);
+      }
+
+      const math = lower.match(/^\s*([\d\s.+\-*/()]+)\s*$/);
+      if (math) {
+        try {
+          const safe = text.replace(/[^0-9+\-*/().\s]/g, '');
+          const result = Function(`"use strict"; return (${safe})`)();
+          if (Number.isFinite(result)) return `Resultado: ${result}`;
+        } catch {}
+      }
+
+      const mode = detectMode(text);
+      state.study.lastMode = mode;
+
+      const topicCandidates = [
+        'revolucion francesa','segunda guerra mundial','fotosintesis','independencia de honduras','fracciones'
+      ];
+      const detectedTopic = topicCandidates.find(t => lower.includes(t)) || text;
+      const entry = getKnowledgeEntry(detectedTopic);
+      state.study.activeTopic = entry ? detectedTopic : (text.length < 90 ? text : state.study.activeTopic || 'tema libre');
+
+      const looksLikeQuestion = /^(que|qué|como|cómo|por que|por qué|para que|para qué|quien|quién|cual|cuál)/i.test(lower) || text.includes('?');
+      const wantsLong = mode === 'Investigación avanzada' || mode === 'Estudio profundo' || lower.includes('resumen') || lower.includes('explicame') || lower.includes('explícame') || lower.includes('tarea') || lower.includes('paso a paso');
+
+      if (wantsLong) {
+        return buildLongSummary(detectedTopic, entry, mode);
+      }
+
+      if (looksLikeQuestion) {
+        if (entry) {
+          const display = toTitle(detectedTopic);
+          return `${display}:
+
+${entry.definition}
+
+💡 En simple: ${entry.easy}
+
+🧠 Lo importante es esto: ${(entry.keyPoints || []).join(', ')}.
+
+Si quieres, te lo desarrollo más largo, más escolar o más casual.`;
+        }
+
+        if (lower.includes('condon') || lower.includes('condón')) {
+          return `El condón sirve para dos cosas principales: prevenir embarazos y reducir el riesgo de infecciones de transmisión sexual. 😌
+
+En simple: es protección.
+
+Si quieres, te explico cómo usarlo bien, cuál comprar o te lo digo en versión seria o en versión sin pena jajaja.`;
+        }
+
+        const smartFallbacks = [
+          `Te respondo natural: eso se entiende mejor si lo vemos por partes. Dime si quieres que te lo explique fácil, formal o bien profundo.`,
+          `Sí te puedo responder eso, pero para dartelo bien cabrón dime el tema exacto y te lo desarrollo con lógica.`,
+          `Puedo ayudarte con eso 😈 si quieres te lo explico normal, en resumen o como investigación.`
+        ];
+        return randomFrom(smartFallbacks);
+      }
+
+      const naturalReplies = [
+        `Te entiendo. Si quieres, puedo ayudarte con eso de forma más profunda, más natural y sin sonar tan robótica.`,
+        `Voy contigo. Si me dices el tema exacto, te lo desarrollo largo y con mejor lógica.`,
+        `Puedo hacerlo. Solo dime el tema y te lo convierto en resumen, investigación o explicación paso a paso.`
+      ];
+      return randomFrom(naturalReplies);
+    }
+
+    function sendMessage() {
+      const message = el.userInput.value.trim();
+      if (!message) return;
+      addMessage(message, 'user');
+      el.userInput.value = '';
+      autoResize();
+
+      state.memory.lastTopics.unshift(message);
+      if (state.memory.lastTopics.length > 10) state.memory.lastTopics.pop();
+      saveState();
+
+      const reply = buildSmartReply(message);
+      addTypingThenReply(reply, 220);
+    }
+
+    function updateUI() {
+      el.sideMode.textContent = state.study.lastMode || 'Conversación';
+      el.sideName.textContent = state.profile.name || 'No definido';
+      el.sideTopic.textContent = state.study.activeTopic || 'ninguno';
+      el.topMode.textContent = `Modo: ${state.study.lastMode || 'Conversación'}`;
+    }
+
+    function exportMemory() {
+      const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'mora-memory-demodex-v30.json';
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function importMemoryFlow() {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = '.json,application/json';
+      input.onchange = e => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+          try {
+            state = deepMerge(structuredClone(DEFAULT_STATE), JSON.parse(reader.result));
+            saveState();
+            addSystem('Memoria importada correctamente.');
+          } catch {
+            addSystem('No pude importar esa memoria.');
+          }
+        };
+        reader.readAsText(file);
+      };
+      input.click();
+    }
+
+    el.sendBtn.addEventListener('click', sendMessage);
+    el.userInput.addEventListener('input', autoResize);
+    el.userInput.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } });
+    el.quickbar.addEventListener('click', e => {
+      const btn = e.target.closest('.quick-btn');
+      if (!btn) return;
+      el.userInput.value = btn.dataset.prompt || '';
+      autoResize();
+      el.userInput.focus();
+    });
+
+    el.newChatBtn.addEventListener('click', () => {
+      el.chat.innerHTML = '';
+      state.study.activeTopic = '';
+      state.study.lastMode = 'Conversación';
+      saveState();
+      addSystem('Nuevo chat iniciado. Contexto conversacional reiniciado.');
+      addMessage('Estoy lista. ¿Con qué tema arrancamos ahora?', 'mora');
+    });
+    el.researchBtn.addEventListener('click', () => {
+      state.study.lastMode = 'Investigación avanzada';
+      saveState();
+      addSystem('Modo cambiado: Investigación avanzada.');
+      addMessage('Perfecto. Ahora priorizaré respuestas más profundas, largas y mejor conectadas. Dame el tema.', 'mora');
+    });
+    el.studyBtn.addEventListener('click', () => {
+      state.study.lastMode = 'Estudio profundo';
+      saveState();
+      addSystem('Modo cambiado: Estudio profundo.');
+      addMessage('Listo. Ahora responderé como tutor: más claro, más largo y con mejor estructura.', 'mora');
+    });
+    el.creativeBtn.addEventListener('click', () => {
+      state.study.lastMode = 'Modo creativo';
+      saveState();
+      addSystem('Modo cambiado: Creativo.');
+      addMessage('Modo creativo activo. Si quieres, te ayudo a inventar ideas, historias, nombres o conceptos.', 'mora');
+    });
+    el.exportBtn.addEventListener('click', exportMemory);
+    el.importBtn.addEventListener('click', importMemoryFlow);
+    el.resetBtn.addEventListener('click', () => {
+      if (!confirm('¿Seguro que quieres borrar TODA la memoria de M.O.R.A.?')) return;
+      localStorage.removeItem(STORAGE_KEY);
+      state = structuredClone(DEFAULT_STATE);
+      el.chat.innerHTML = '';
+      updateUI();
+      addSystem('Reset total ejecutado.');
+      addMessage('Toda mi memoria fue limpiada. Pero puedo volver a aprender.', 'mora');
+    });
+
+    function boot() {
+      updateUI();
+      addSystem('PROJECT M.O.R.A. v3.0 // DEMODEX CONVERSATIONAL CORE');
+      addMessage('Inicialización completada. Ahora soy una versión más conversacional, más limpia y más parecida a una IA moderna. Dime tu nombre o empieza con un tema.', 'mora');
+      autoResize();
+      saveState();
+    }
+
+    boot();
+  </script>
+</body>
+</html>
